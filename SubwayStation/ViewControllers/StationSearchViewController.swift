@@ -7,8 +7,16 @@
 
 import UIKit
 import SnapKit
+import Alamofire
 
 class StationSearchViewController: UIViewController {
+    
+    private lazy var stationList: [Station] = [] //{
+//        didSet {
+//            tableView.reloadData()
+//        }
+//    }
+    
 
     //MARK: - tableView
     private lazy var tableView: UITableView = {
@@ -35,13 +43,25 @@ class StationSearchViewController: UIViewController {
 extension StationSearchViewController: UITableViewDelegate, UITableViewDataSource {
     //MARK: - UITableViewDataSource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 10
+        return stationList.count
+        //return 10 -> Cell의 갯수가 0이 아닐 때 searchBar가 사라짐. why? 아직 모름.
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell()
-        cell.textLabel?.text = "\(indexPath.row)"
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell") //indentifier에 그냥 임의값 넣기.
+        
+        cell.textLabel?.text = stationList[indexPath.row].stationName
+        cell.detailTextLabel?.text = stationList[indexPath.row].lineNumber
+        
         return cell
+    }
+    
+    //MARK: - UITableViewDelegate
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let viewController = DetailedInfoViewController(stationName: stationList[indexPath.row].stationName)
+        
+        
+        self.navigationController?.pushViewController(viewController, animated: true)
     }
 }
 
@@ -50,11 +70,18 @@ extension StationSearchViewController: UITableViewDelegate, UITableViewDataSourc
 extension StationSearchViewController: UISearchBarDelegate {
     
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        self.tableView.reloadData()
         tableView.isHidden = false
     }
     
     func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        self.stationList = []
         tableView.isHidden = true
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) { //searchBar에 입력된 값이 searchText임. 이 값이 바뀔 때마다 이 메서드 호출됨.
+//        self.stationList = []
+        requestStationName(from: searchText)
     }
 }
 
@@ -65,7 +92,7 @@ private extension StationSearchViewController {
     func setupNavigationBar() {
         
         self.navigationItem.title = "지하철 도착 정보"
-        self.navigationItem.hidesSearchBarWhenScrolling = false
+        self.navigationItem.hidesSearchBarWhenScrolling = false //일단 이거 false하면 괜찮음. cell이 있으면 자동 스크롤되나..?
         self.navigationController?.navigationBar.prefersLargeTitles = true
         
         let searchController = UISearchController()
@@ -85,6 +112,26 @@ private extension StationSearchViewController {
         tableView.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
+    }
+    
+    func requestStationName(from stationName: String) {
+        let urlString = "http://openapi.seoul.go.kr:8088/sample/json/SearchInfoBySubwayNameService/1/5/\(stationName)"
+        //url String을 넘기면됨.
+        //server로 가면서 한글이 깨지는 것을 방지하려면 adding~(withAllow~: .urlQueryAllowed)를 해주면됨.
+        AF.request(urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            //요청 후, 가져올 response
+            .responseDecodable(of: StationResponseModel.self) { [weak self] response in
+                //response는 1)성공, 2)실패의 두 가지 경우를 가진 열거형? 임. 이를 이용.
+                guard let self = self,
+                    case .success(let data) = response.result else { return }
+                
+//                data.stations.forEach {
+//                    self.stationList.append($0)
+//                }
+                self.stationList = data.stations //같은 타입이니 그냥 이렇게 해주면됨. 이러면 textDidChange에서 초기화할 필요없이 data바뀌면 그 값 들어가니까!
+                self.tableView.reloadData() //didSet에서 할 필요없이 여기서 바로 하는 것이 더 좋아보임.
+            }
+            .resume() //마지막에 이건 필수!!!!!
     }
 }
 
@@ -118,3 +165,17 @@ private extension StationSearchViewController {
     : main화면인 "지하철 도착 정보" title의 viewController는 사실 UITableView를 가지고 있음. SearchBar가 활성화될때만 isHidden = false로 하여 나타나게 해볼 예정.
  */
 
+
+/*
+ <네트워크 통신 허가?>
+ 
+ 1. info.plist에 App Transport Security Settings 추가.
+ 2. 그 하위에 Allow Arbitrary Loads추가해서 NO -> YES로 변경.
+ 
+ @ ATS란 App Transport Security의 약자로 2015년 iOS 9 버전부터 도입된 보안 사양이다.
+ ATS는 보안에 취약한 네트워크의 연결을 차단시킨다.
+ 기존에 많이 쓰이던 HTTP도 마찬가지이다!
+ 
+ HTTP프로토콜을 사용하기 위해서는 Info.plist에서 위와같이 편집해야하는 것!
+ 이후로 앱을 다시 빌드하여 실행해보면 HTTP 프로토콜이 연결되는 것을 볼 수 있다.
+ */
