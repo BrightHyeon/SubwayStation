@@ -128,7 +128,11 @@ private extension StationSearchViewController {
 //                data.stations.forEach {
 //                    self.stationList.append($0)
 //                }
-                self.stationList = data.stations //같은 타입이니 그냥 이렇게 해주면됨. 이러면 textDidChange에서 초기화할 필요없이 data바뀌면 그 값 들어가니까!
+                //같은 타입이니 그냥 이렇게 해주면됨. 이러면 textDidChange에서 초기화할 필요없이 data바뀌면 그 값 들어가니까!
+                self.stationList = data.stations.filter({ data.stations.first?.stationName != $0.stationName })
+                if !data.stations.isEmpty {
+                    self.stationList.append(data.stations.first ?? Station(stationName: "", lineNumber: ""))
+                }
                 self.tableView.reloadData() //didSet에서 할 필요없이 여기서 바로 하는 것이 더 좋아보임.
             }
             .resume() //마지막에 이건 필수!!!!!

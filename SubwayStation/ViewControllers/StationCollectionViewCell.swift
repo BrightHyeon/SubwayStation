@@ -40,7 +40,7 @@ private extension StationCollectionViewCell {
         
         //cell의 배경색에 대한 세팅을 해주어야 기준점이 생겨서 테두리그림자가 성공적으로 생성된다.
         //지정해주지않을경우, 기준을 잘 잡지못하고, 라벨주변으로 그림자가 생기는 불상사가 발생!
-        backgroundColor = .white // = self.backgroundColor = .white
+        backgroundColor = .systemBackground // = self.backgroundColor = .white
         
         [lineLabel, remainTimeLabel].forEach { addSubview($0) }
         

@@ -102,7 +102,7 @@ extension DetailedInfoViewController: UICollectionViewDataSource, UICollectionVi
         //configure the cell
         cell.layer.cornerRadius = 10.0 //radius
         cell.layer.borderWidth = 0.0 //테두리 두께
-        cell.layer.shadowColor = UIColor.black.cgColor //색
+        cell.layer.shadowColor = UIColor.blue.cgColor //색
         cell.layer.shadowOffset = CGSize(width: 0, height: 0) //셀 기준 위치
         cell.layer.shadowRadius = 4 //번짐정도
         cell.layer.shadowOpacity = 0.5 //진함정도
